@@ -45,7 +45,7 @@ The [copyGraph](pytorch/copyGraph.py) program is used to merge the preprocessed 
 $ python copyGraph.py —-data mnist —-graph pretrained.mat —-features pretrained.pkl —-out pretrained
 ```
 
-The above command assumes that the graph is stored under the [pretrained.mat](data/mnist/pretrained.mat) file and the merged file is stored back to pretrained.mat file. 
+The above command assumes that the graph is stored in the [pretrained.mat](data/mnist/pretrained.mat) file and the merged file is stored back to pretrained.mat file. 
 
 ##### [DCC](pytorch/DCC.py) searches for the file with name pretrained.mat. Hence please retain the name. #####
 
@@ -63,14 +63,14 @@ The other preprocessed graph files can be found in gdrive [folder](https://drive
 
 ### Evaluation ###
 
-Towards the end of run of DCC algorithm, i.e., once the stopping criterion is met, [DCC](pytorch/DCC.py) starts evaluating the cluster assignment for the total dataset. The evaluation output is logged into tensorboard logger. The penultimate evaluation output is considered for reporting in the paper.
+Towards the end of run of DCC algorithm, i.e., once the stopping criterion is met, [DCC](pytorch/DCC.py) starts evaluating the cluster assignment for the total dataset. The evaluation output is logged into tensorboard logger. The penultimate evaluated output is reported in the paper.
 
 ##### Like RCC, the AMI definition followed here differs slightly from the default definition found in the sklearn package. To match the results listed in the paper, please modify it accordingly. #####
 
-The tensorboard logs for both pretraining and DCC are stored under the [runs](data/mnist/results/runs) folder.
+The tensorboard logs for both pretraining and DCC will be stored in the "runs" folder under [results](data/mnist/results/).
 
 ### Creating input ###
 
 The input file for SDAE pretraining, [traindata.mat](data/mnist/traindata.mat) and [testdata.mat](data/mnist/testdata.mat), stores the features of the 'N' data samples in a matrix format N x D. We followed 4:1 ratio to split train and validation data. The provided [make_data.py](pytorch/make_data.py) can be used to build training and validation data.
 
-To construct mkNN edge set and to create preprocessed input file, [pretrained.mat](data/mnist/pretrained.mat), from the raw feature file, use [edgeConstruction.py](https://bitbucket.org/sohilas/robust-continuous-clustering/src/Toolbox/edgeConstruction.py) released by RCC. Please follow the instruction therein.
+To construct mkNN edge set and to create preprocessed input file, [pretrained.mat](data/mnist/pretrained.mat), from the raw feature file, use [edgeConstruction.py](https://bitbucket.org/sohilas/robust-continuous-clustering/src/0516c0e1c65027ca0ffa1f09e0aa3074b99dea80/Toolbox/edgeConstruction.py) released by RCC. Please follow the instruction therein.
