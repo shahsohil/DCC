@@ -37,8 +37,8 @@ __C.DIM = 10
 # Number of pairs per batch
 __C.PAIRS_PER_BATCH = 128
 
-# Fraction of "change in label assignment of pairs" to be considered for stopping criterion
-__C.STOPPING_CRITERION = 0.1
+# Fraction of "change in label assignment of pairs" to be considered for stopping criterion - 1% of pairs
+__C.STOPPING_CRITERION = 0.001
 
 
 def get_data_dir(db):

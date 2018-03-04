@@ -188,7 +188,7 @@ def main():
             # This false criterion is overwritten by checking for the condition twice.
             if change_in_assign > stopping_threshold:
                 flag += 1
-            if flag == 3:
+            if flag == 4:
                 break
 
         if((epoch+1) % args.M == 0):
