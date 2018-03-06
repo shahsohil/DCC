@@ -2,7 +2,7 @@
 
 ## Introduction ##
 
-This is a Pytorch implementation of the DCC algorithms presented in the following paper ([paper](https://openreview.net/pdf?id=SJzMATlAZ)):
+This is a Pytorch implementation of the DCC algorithms presented in the following paper ([paper](http://arxiv.org/abs/1803.01449)):
 
 Sohil Atul Shah and Vladlen Koltun. Deep Continuous Clustering.
 
@@ -11,7 +11,7 @@ If you use this code in your research, please cite our paper.
 @article{shah2018DCC,
 	author    = {Sohil Atul Shah and Vladlen Koltun},
 	title     = {Deep Continuous Clustering},
-	journal   = {arXiv:NNNN.NNNNN},
+	journal   = {arXiv:1803.01449},
 	year      = {2018},
 }
 ```
