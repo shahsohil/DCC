@@ -20,6 +20,7 @@ The source code and dataset are published under the MIT license. See [LICENSE](L
 
 ## Requirement ##
 
+* Python 2.7
 * [Pytorch](http://pytorch.org/) >= v0.2.0
 * [Tensorboard-pytorch](https://github.com/lanpa/tensorboard-pytorch)
 
