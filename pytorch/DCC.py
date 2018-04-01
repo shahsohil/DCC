@@ -180,7 +180,7 @@ def main():
             log_value('lambda', _lambda, epoch)
 
         train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda)
-        Z, U, change_in_assign = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
+        Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
 
         if flag:
             # As long as the change in label assignment < threshold, DCC continues to run.
@@ -212,7 +212,7 @@ def main():
                          'delta2': _delta2,
                          }, index, filename=outputdir)
 
-    sio.savemat(os.path.join(outputdir, 'features'), {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs})
+    sio.savemat(os.path.join(outputdir, 'features'), {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs, 'cluster':assignment})
 
 
 # Training
@@ -286,9 +286,10 @@ def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, fl
     U = criterion.U.data.cpu().numpy()
 
     change_in_assign = 0
+    assignment = -np.ones(len(labels))
     # logs clustering measures only if sigma2 has reached the minimum (delta2)
     if flag:
-        index, ari, ami, nmi, acc, n_components = computeObj(U, pairs, _delta, labels, numeval)
+        index, ari, ami, nmi, acc, n_components, assignment = computeObj(U, pairs, _delta, labels, numeval)
 
         # log to TensorBoard
         change_in_assign = np.abs(oldassignment - index).sum()
@@ -302,7 +303,7 @@ def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, fl
 
         oldassignment[...] = index
 
-    return features, U, change_in_assign
+    return features, U, change_in_assign, assignment
 
 # Saving checkpoint
 def save_checkpoint(state, index, filename):

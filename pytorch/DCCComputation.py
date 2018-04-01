@@ -111,7 +111,7 @@ def computeObj(U, pairs, _delta, gtlabels, numeval):
 
     ari, ami, nmi, acc = benchmarking(gtlabels[:numeval], labels[:numeval])
 
-    return index2, ari, ami, nmi, acc, n_components
+    return index2, ari, ami, nmi, acc, n_components, labels
 
 
 def benchmarking(gtlabels, labels):

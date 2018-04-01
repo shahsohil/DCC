@@ -67,7 +67,7 @@ Towards the end of run of DCC algorithm, i.e., once the stopping criterion is me
 
 ##### Like RCC, the AMI definition followed here differs slightly from the default definition found in the sklearn package. To match the results listed in the paper, please modify it accordingly. #####
 
-The tensorboard logs for both pretraining and DCC will be stored in the "runs" folder under [results](data/mnist/results/).
+The tensorboard logs for both pretraining and DCC will be stored in the "runs/DCC" folder under [results](data/mnist/results/). The final embedded features 'U' and cluster assignment for each sample is saved in 'features.mat' file under [results](data/mnist/results/).  
 
 ### Creating input ###
 
