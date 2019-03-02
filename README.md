@@ -80,6 +80,8 @@ The tensorboard logs for both pretraining and DCC will be stored in the "runs/DC
 
 ### Creating input ###
 
+Please find required files for MNIST dataset shared [here](https://drive.google.com/drive/folders/10DjPtVRHgZcM-dshm4MuyB5DmxpfG_hV?usp=sharing).
+
 The input file for SDAE pretraining, [traindata.mat](data/mnist/traindata.mat) and [testdata.mat](data/mnist/testdata.mat), stores the features of the 'N' data samples in a matrix format N x D. We followed 4:1 ratio to split train and validation data. The provided [make_data.py](pytorch/make_data.py) can be used to build training and validation data.
 
 To construct mkNN edge set and to create preprocessed input file, [pretrained.mat](data/mnist/pretrained.mat), from the raw feature file, use [edgeConstruction.py](https://bitbucket.org/sohilas/robust-continuous-clustering/src/0516c0e1c65027ca0ffa1f09e0aa3074b99dea80/Toolbox/edgeConstruction.py) released by RCC. Please follow the instruction therein.
