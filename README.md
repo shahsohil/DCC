@@ -89,7 +89,7 @@ To construct mkNN edge set and to create preprocessed input file, [pretrained.ma
 ### Understanding Steps Through Visual Example ###
 
 Generate 2D clustered data with
-```python
+```
 python make_data.py --data easy
 ```
 This creates 3 clusters where the centers are colinear to each other. 
@@ -97,12 +97,12 @@ We would then expect to only need 1 dimensional latent space (either x or y) to 
 onto the line passing through the center of the clusters.
 
 Construct mKNN graph with
-```python
+```
 python edgeConstruction.py --dataset easy --samples 600
 ```
 
 Pretrain SDAE with
-```python
+```
 python pretraining.py --data easy --tensorboard --id 1 --niter 500 --dim 1 --lr 0.0001 --step 300
 ```
 
