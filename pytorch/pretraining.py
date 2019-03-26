@@ -43,10 +43,7 @@ parser.add_argument('--h5', dest='h5', help='to store as h5py file', default=Fal
 parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action='store_true')
 parser.add_argument('--id', type=int, help='identifying number for storing tensorboard logs')
 
-def main():
-    global args
-
-    args = parser.parse_args()
+def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
@@ -78,10 +75,10 @@ def main():
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batchsize, shuffle=True, **kwargs)
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=True, **kwargs)
 
-    pretrain(outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
+    pretrain(args, outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
                        'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader)
 
-def pretrain(outputdir, params, use_cuda, trainloader, testloader):
+def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
     numlayers = params['nlayers']
     lr = params['lrate'][0]
     maxepoch = params['nepoch']
@@ -170,15 +167,15 @@ def pretrain(outputdir, params, use_cuda, trainloader, testloader):
 
         for epoch in range(maxepoch[index]):
             scheduler.step()
-            train(trainloader, net, index, optimizer, epoch, use_cuda)
-            test(testloader, net, index, epoch, use_cuda)
+            train(args, trainloader, net, index, optimizer, epoch, use_cuda)
+            test(args, testloader, net, index, epoch, use_cuda)
             # Save checkpoint
             save_checkpoint({'epoch': epoch+1, 'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()},
                             index, filename=outputdir)
 
 
 # Training
-def train(trainloader, net, index, optimizer, epoch, use_cuda):
+def train(args, trainloader, net, index, optimizer, epoch, use_cuda):
     losses = AverageMeter()
 
     print('\nIndex: %d \t Epoch: %d' %(index,epoch))
@@ -204,7 +201,7 @@ def train(trainloader, net, index, optimizer, epoch, use_cuda):
 
 
 # Testing
-def test(testloader, net, index, epoch, use_cuda):
+def test(args, testloader, net, index, epoch, use_cuda):
     losses = AverageMeter()
 
     net.eval()
@@ -228,4 +225,5 @@ def save_checkpoint(state, index, filename):
     torch.save(state, filename+'/checkpoint_%d.pth.tar' % index)
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)
