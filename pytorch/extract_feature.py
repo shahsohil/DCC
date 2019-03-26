@@ -5,12 +5,13 @@ import numpy as np
 import argparse
 import cPickle
 from config import cfg, get_data_dir, get_output_dir
+import data_params as dp
 
 import torch
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
-from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale
+from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale, extract_sdae_easy
 from extractconvSDAE import extract_convsdae_mnist, extract_convsdae_coil100, extract_convsdae_ytf, extract_convsdae_yale
 from custom_data import DCCPT_data
 
@@ -65,6 +66,10 @@ def main():
         net = extract_convsdae_ytf(slope=reluslope)
     elif args.db == 'cyale':
         net = extract_convsdae_yale(slope=reluslope)
+    elif args.db == dp.easy.name:
+        net = extract_sdae_easy(slope=reluslope, dim=args.dim)
+    else:
+        raise ValueError("Unexpected database %s" % args.db)
 
     totalset = torch.utils.data.ConcatDataset([trainset, testset])
     dataloader = torch.utils.data.DataLoader(totalset, batch_size=100, shuffle=False, **kwargs)

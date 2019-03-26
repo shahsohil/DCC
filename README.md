@@ -114,3 +114,7 @@ tensorboard --logdir data/easy/results/runs/pretraining/1/
 ```
 Then navigate to the http link that is logged in console.
 
+Extract pretrained features
+```
+python extract_feature.py --data easy --net checkpoint_2.pth.tar --features pretrained --dim 1
+```
