@@ -118,3 +118,8 @@ Extract pretrained features
 ```
 python extract_feature.py --data easy --net checkpoint_2.pth.tar --features pretrained --dim 1
 ```
+
+Merge preprocessed mkNN graph and the pretrained features with
+```
+python copyGraph.py --data easy --graph pretrained.mat --features pretrained.pkl --out pretrained
+```
