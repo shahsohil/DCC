@@ -5,9 +5,14 @@ import math
 import numpy as np
 import scipy.io as sio
 import argparse
+
 from config import cfg, get_data_dir, get_output_dir, AverageMeter
 
 import data_params as dp
+import matplotlib.pyplot as plt
+import io
+import PIL.Image
+from torchvision.transforms import ToTensor
 
 import torch
 import torch.optim as optim
@@ -21,7 +26,7 @@ from DCCLoss import DCCWeightedELoss, DCCLoss
 from DCCComputation import makeDCCinp, computeHyperParams, computeObj
 
 # used for logging to TensorBoard
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import configure, log_value, log_images
 
 # Parse all the input argument
 parser = argparse.ArgumentParser(description='PyTorch DCC Finetuning')
@@ -296,6 +301,10 @@ def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numev
 
     change_in_assign = 0
     assignment = -np.ones(len(labels))
+
+    if args.tensorboard and epoch % 3 == 0:
+        log_images('representatives', plot_to_image(U, 'representatives'), epoch)
+
     # logs clustering measures only if sigma2 has reached the minimum (delta2)
     if flag:
         index, ari, ami, nmi, acc, n_components, assignment = computeObj(U, pairs, _delta, labels, numeval)
@@ -313,6 +322,17 @@ def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numev
         oldassignment[...] = index
 
     return features, U, change_in_assign, assignment
+
+def plot_to_image(U, title):
+    plt.figure()
+    plt.scatter(U[:,0], U[:,1])
+    plt.title(title)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+    image = ToTensor()(image).unsqueeze(0)
+    return image
 
 # Saving checkpoint
 def save_checkpoint(state, index, filename):
