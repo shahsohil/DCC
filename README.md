@@ -100,3 +100,15 @@ Construct mKNN graph with
 ```python
 python edgeConstruction.py --dataset easy --samples 600
 ```
+
+Pretrain SDAE with
+```python
+python pretraining.py --data easy --tensorboard --id 1 --niter 500 --dim 1 --lr 0.0001 --step 300
+```
+
+You can debug the pretraining losses using tensorboard (needs tensorflow) with
+```
+tensorboard --logdir data/easy/results/runs/pretraining/1/
+```
+Then navigate to the http link that is logged in console.
+

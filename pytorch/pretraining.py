@@ -11,7 +11,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
-from SDAE import sdae_mnist, sdae_reuters, sdae_ytf, sdae_coil100, sdae_yale
+from SDAE import sdae_mnist, sdae_reuters, sdae_ytf, sdae_coil100, sdae_yale, sdae_easy
 from convSDAE import convsdae_mnist, convsdae_coil100, convsdae_ytf, convsdae_yale
 from custom_data import DCCPT_data
 
@@ -110,6 +110,11 @@ def pretrain(outputdir, params, use_cuda, trainloader, testloader):
     elif args.db == 'cyale':
         net = convsdae_yale(dropout=params['dropout'], slope=params['reluslope'])
         numlayers = 6
+    elif args.db == 'easy':
+        net = sdae_easy(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
+        numlayers = 2
+    else:
+        raise ValueError("Unexpected database %s" % args.db)
 
     # For the final FT stage of SDAE pretraining, the total epoch is twice that of previous stages.
     maxepoch = [maxepoch]*numlayers + [maxepoch*2]

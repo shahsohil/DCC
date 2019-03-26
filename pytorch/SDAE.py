@@ -75,3 +75,6 @@ def sdae_coil100(dropout=0.2, slope=0.0, dim=10):
 
 def sdae_yale(dropout=0.2, slope=0.0, dim=10):
     return SDAE(dim=[32256, 500, 500, 2000, dim], dropout=dropout, slope=slope)
+
+def sdae_easy(dropout=0.2, slope=0.0, dim=1):
+    return SDAE(dim=[2, 4, dim], dropout=dropout, slope=slope)
