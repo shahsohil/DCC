@@ -10,6 +10,7 @@ import h5py
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.datasets.samples_generator import make_blobs
 
 
 def make_reuters_data(path, N):
@@ -136,6 +137,22 @@ def make_misc_data(path, filename, dim, isconv=False):
 
     if isconv:
         X = X.reshape((-1, dim[2], dim[0], dim[1]))
+    save_misc_data(path, X, Y, N)
+
+
+def make_easy_visual_data(path, N=600):
+    """Make 3 clusters of 2D data where the cluster centers lie along a line.
+    The latent variable would be just their x or y value since that uniquely defines their projection onto the line.
+    """
+
+    line = (1.5, 1)
+    centers = [(m, m * line[0] + line[1]) for m in (-4, 0, 6)]
+    cluster_std = [1, 1, 1.5]
+    X, labels = make_blobs(n_samples=N, cluster_std=cluster_std, centers=centers, n_features=len(centers[0]))
+    save_misc_data(path, X, labels, N)
+
+
+def save_misc_data(path, X, Y, N):
     sio.savemat(osp.join(path, 'traindata.mat'), {'X': X[:N * 4 / 5], 'Y': Y[:N * 4 / 5]})
     sio.savemat(osp.join(path, 'testdata.mat'), {'X': X[N * 4 / 5:], 'Y': Y[N * 4 / 5:]})
 
@@ -173,3 +190,5 @@ if __name__ == '__main__':
             make_misc_data(datadir, 'coil100rgb.pkl', [128, 128, 3], isconv=True)
         elif args.db == 'cyale':
             make_misc_data(datadir, 'yale_DoG.pkl', [168, 192, 1], isconv=True)
+        elif args.db == 'easy':
+            make_easy_visual_data(datadir)
