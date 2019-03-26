@@ -26,10 +26,7 @@ parser.add_argument('--deviceID', type=int, help='deviceID', default=0)
 parser.add_argument('--dim', type=int, help='dimension', default=10)
 parser.add_argument('--h5', dest='h5', help='to store as h5py file', default=False, type=bool)
 
-def main():
-    global args
-
-    args = parser.parse_args()
+def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
@@ -127,4 +124,5 @@ def extract(dataloader, net, use_cuda):
     return original, np.asarray(features).astype(np.float32), np.asarray(labels)
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)

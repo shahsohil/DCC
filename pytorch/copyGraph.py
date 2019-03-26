@@ -18,8 +18,9 @@ parser.add_argument('--out', dest='out', help='path to the output file', default
 parser.add_argument('--h5', dest='h5', action='store_true', help='to store as h5py file')
 
 if __name__ == '__main__':
-
     args = parser.parse_args()
+
+def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
@@ -42,6 +43,10 @@ if __name__ == '__main__':
                        data1['X'][:].astype(np.float32).reshape((len(data1['gtlabels'].T),-1)))
         assert not a.size
 
+        joined_data = {'gtlabels':data0['labels'][:], 'X':data0['data'][:].astype(np.float32),
+                                            'Z':data0['Z'][:].astype(np.float32),
+                                            'w':data1['w'][:].astype(np.float32)}
+
         if args.h5:
             data2.create_dataset('gtlabels', data=data0['labels'][:])
             data2.create_dataset('X', data=data0['data'][:].astype(np.float32))
@@ -51,9 +56,8 @@ if __name__ == '__main__':
             data1.close()
             data2.close()
         else:
-            sio.savemat(outputfile+'.mat', {'gtlabels':data0['labels'][:], 'X':data0['data'][:].astype(np.float32),
-                                            'Z':data0['Z'][:].astype(np.float32),
-                                            'w':data1['w'][:].astype(np.float32)})
+            sio.savemat(outputfile+'.mat', joined_data)
+        return joined_data
     else:
         print('one or both the files not found')
         raise
