@@ -5,6 +5,8 @@ from edgeConstruction import compressed_data
 import data_params as dp
 import make_data
 import pretraining
+import extract_feature
+import copyGraph
 
 datadir = get_data_dir(dp.easy.name)
 N = 600
@@ -20,14 +22,25 @@ args = edict()
 args.db = dp.easy.name
 args.niter = 500
 args.step = 300
-args.lr = 0.0001
+args.lr = 0.001
 args.resume = False
 args.batchsize = 300
 args.ngpu = 1
 args.deviceID = 0
 args.tensorboard = True
 args.h5 = False
-args.id = 2
+args.id = 4
 args.dim = 2
 args.manualSeed = cfg.RNG_SEED
-pretraining.main(args)
+index, _ = pretraining.main(args)
+
+# extract pretrained features
+args.feat = 'pretrained'
+args.torchmodel = 'checkpoint_{}.pth.tar'.format(index)
+extract_feature.main(args)
+
+# merge the features and mkNN graph
+args.g = 'pretrained.mat'
+args.out = 'pretrained'
+args.feat = 'pretrained.pkl'
+copyGraph.main(args)
