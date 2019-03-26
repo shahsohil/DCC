@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+import data_params
 
 # The model definition for Stacked Denoising AE.
 # This model is used during the pretraining stage.
@@ -77,4 +78,4 @@ def sdae_yale(dropout=0.2, slope=0.0, dim=10):
     return SDAE(dim=[32256, 500, 500, 2000, dim], dropout=dropout, slope=slope)
 
 def sdae_easy(dropout=0.2, slope=0.0, dim=1):
-    return SDAE(dim=[2, 4, dim], dropout=dropout, slope=slope)
+    return SDAE(dim=data_params.easy.dim + [dim], dropout=dropout, slope=slope)

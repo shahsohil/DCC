@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+import data_params
 
 # This class is similar to SDAE code.
 # This model is initiated when SDAE is needed for training without Dropout modules i.e., during DCC.
@@ -55,3 +56,6 @@ def extract_sdae_coil100(slope=0.0, dim=10):
 
 def extract_sdae_yale(slope=0.0, dim=10):
     return extractSDAE(dim=[32256, 500, 500, 2000, dim], slope=slope)
+
+def extract_sdae_easy(slope=0.0, dim=1):
+    return extractSDAE(dim=data_params.easy.dim + [dim], slope=slope)
