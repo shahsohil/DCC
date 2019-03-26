@@ -7,6 +7,7 @@ import make_data
 import pretraining
 import extract_feature
 import copyGraph
+import DCC
 
 datadir = get_data_dir(dp.easy.name)
 N = 600
@@ -23,15 +24,22 @@ args.db = dp.easy.name
 args.niter = 500
 args.step = 300
 args.lr = 0.001
+
+# if we need to resume for faster debugging/results
 args.resume = False
+args.level = None
+
 args.batchsize = 300
 args.ngpu = 1
 args.deviceID = 0
 args.tensorboard = True
 args.h5 = False
-args.id = 4
+args.id = 1
 args.dim = 2
 args.manualSeed = cfg.RNG_SEED
+
+# if we comment out the next pretraining step, use the latest checkpoint
+index = len(dp.easy.dim)-1
 index, _ = pretraining.main(args)
 
 # extract pretrained features
@@ -44,3 +52,10 @@ args.g = 'pretrained.mat'
 args.out = 'pretrained'
 args.feat = 'pretrained.pkl'
 copyGraph.main(args)
+
+# actually do DCC
+args.batchsize = cfg.PAIRS_PER_BATCH
+args.nepoch = 500
+args.M = 20
+args.lr = 0.001
+out = DCC.main(args)
