@@ -96,6 +96,8 @@ This creates 3 clusters where the centers are colinear to each other.
 We would then expect to only need 1 dimensional latent space (either x or y) to uniquely project the data
 onto the line passing through the center of the clusters.
 
+![generated ground truth](https://i.imgur.com/H61xQix.png)
+
 Construct mKNN graph with
 ```
 python edgeConstruction.py --dataset easy --samples 600
