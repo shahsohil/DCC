@@ -45,10 +45,9 @@ parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action=
 parser.add_argument('--id', type=int, help='identifying number for storing tensorboard logs')
 
 
-def main():
-    global args, oldassignment
+def main(args):
+    global oldassignment
 
-    args = parser.parse_args()
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
@@ -122,14 +121,8 @@ def main():
     batch_sampler = DCCSampler(trainset, shuffle=True, batch_size=args.batchsize)
 
     # copying model params from Pretrained (SDAE) weights file
-    filename = os.path.join(outputdir, args.torchmodel)
-    if os.path.isfile(filename):
-        print("==> loading params from checkpoint '{}'".format(filename))
-        checkpoint = torch.load(filename)
-        net.load_state_dict(checkpoint['state_dict'])
-    else:
-        print("==> no checkpoint found at '{}'".format(filename))
-        raise
+    load_weights(args, outputdir, net)
+
 
     # creating objects for loss functions, U's are initialized to Z here
     # Criterion1 corresponds to reconstruction loss
@@ -185,8 +178,8 @@ def main():
             log_value('sigma2', _sigma2, epoch)
             log_value('lambda', _lambda, epoch)
 
-        train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda)
-        Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
+        train(args, trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda)
+        Z, U, change_in_assign, assignment = test(args, testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
 
         if flag:
             # As long as the change in label assignment < threshold, DCC continues to run.
@@ -218,11 +211,21 @@ def main():
                          'delta2': _delta2,
                          }, index, filename=outputdir)
 
-    sio.savemat(os.path.join(outputdir, 'features'), {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs, 'cluster':assignment})
+    output = {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs, 'cluster':assignment}
+    sio.savemat(os.path.join(outputdir, 'features'), output)
 
+def load_weights(args, outputdir, net):
+    filename = os.path.join(outputdir, args.torchmodel)
+    if os.path.isfile(filename):
+        print("==> loading params from checkpoint '{}'".format(filename))
+        checkpoint = torch.load(filename)
+        net.load_state_dict(checkpoint['state_dict'])
+    else:
+        print("==> no checkpoint found at '{}'".format(filename))
+        raise
 
 # Training
-def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda):
+def train(args, trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda):
     losses = AverageMeter()
     losses1 = AverageMeter()
     losses2 = AverageMeter()
@@ -270,7 +273,7 @@ def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, 
 
 
 # Testing
-def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag):
+def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag):
     net.eval()
 
     original = []
@@ -317,4 +320,5 @@ def save_checkpoint(state, index, filename):
     torch.save(state, newfilename)
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)
