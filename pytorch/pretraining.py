@@ -188,7 +188,7 @@ def train(trainloader, net, index, optimizer, epoch, use_cuda):
         outputs = net(inputs_Var, index)
 
         # record loss
-        losses.update(outputs.data[0], inputs.size(0))
+        losses.update(outputs.item(), inputs.size(0))
 
         outputs.backward()
         optimizer.step()
@@ -211,7 +211,7 @@ def test(testloader, net, index, epoch, use_cuda):
         outputs = net(inputs_Var, index)
 
         # measure accuracy and record loss
-        losses.update(outputs.data[0], inputs.size(0))
+        losses.update(outputs.item(), inputs.size(0))
 
     # log to TensorBoard
     if args.tensorboard:
