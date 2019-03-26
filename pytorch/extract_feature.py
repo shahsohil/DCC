@@ -100,6 +100,7 @@ def main(args):
         fo = open(feat_path + '.pkl', 'wb')
         cPickle.dump({'labels': labels, 'Z': np.squeeze(features_dr), 'data': np.squeeze(features)}, fo, protocol=2)
         fo.close()
+    return features, features_dr, labels
 
 def extract(dataloader, net, use_cuda):
     net.eval()
