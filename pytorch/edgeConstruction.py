@@ -5,6 +5,8 @@ import scipy.io as sio
 import argparse
 import random
 
+from config import cfg, get_data_dir, get_output_dir
+
 from sklearn.preprocessing import scale as skscale
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import normalize
@@ -25,12 +27,14 @@ def load_data(filename, n_samples):
 
 
 def load_matdata(filename, n_samples):
+    # TODO switch other loading to also use new X,Y convention instead of labels,data?
     data = sio.loadmat(filename)
-    labels = data['labels'][0:n_samples]
+    labels = data['Y'][0:n_samples]
     labels = np.squeeze(labels)
-    features = data['data'][0:n_samples]
+    features = data['X'][0:n_samples]
     features = features.astype(np.float32, copy=False)
-    features = features.reshape((n_samples, -1))
+    # TODO figure out why we need to reshape this...
+    # features = features.reshape((n_samples, -1))
     return labels, features
 
 
@@ -44,6 +48,17 @@ def load_data_h5py(filename, n_samples):
     features = features.reshape((n_samples, -1))
     data.close()
     return labels, features
+
+
+def load_train_and_validation(loader, datadir, n_samples):
+    td = os.path.join(datadir, 'traindata.mat')
+    # TODO n_samples don't really make sense as a single parameter anymore since data set is split in 2
+    lt, ft = loader(td, n_samples)
+
+    tv = os.path.join(datadir, 'testdata.mat')
+    lv, fv = loader(tv, n_samples)
+
+    return np.concatenate((lt, lv)), np.concatenate((ft, fv))
 
 
 def feature_transformation(features, preprocessing='normalization'):
@@ -81,9 +96,9 @@ def kNN(X, k, measure='euclidean'):
         distances, indices = w[i, y[i, 1:k + 1]], y[i, 1:k + 1]
         for (d, j) in zip(distances, indices):
             if i < j:
-                weights.append((i, j, d*d))
+                weights.append((i, j, d * d))
             else:
-                weights.append((j, i, d*d))
+                weights.append((j, i, d * d))
     weights = sorted(weights, key=lambda r: (r[0], r[1]))
     return unique_rows(np.asarray(weights))
 
@@ -107,30 +122,31 @@ def mkNN(X, k, measure='euclidean'):
 
     samples = X.shape[0]
     batchsize = 10000
-    b = np.arange(k+1)
+    b = np.arange(k + 1)
     b = tuple(b[1:].ravel())
 
-    z=np.zeros((samples,k))
-    weigh=np.zeros_like(z)
+    z = np.zeros((samples, k))
+    weigh = np.zeros_like(z)
 
     # This loop speeds up the computation by operating in batches
     # This can be parallelized to further utilize CPU/GPU resource
     for x in np.arange(0, samples, batchsize):
         start = x
-        end = min(x+batchsize,samples)
+        end = min(x + batchsize, samples)
 
         w = distance.cdist(X[start:end], X, measure)
 
         y = np.argpartition(w, b, axis=1)
 
-        z[start:end,:] = y[:, 1:k + 1]
-        weigh[start:end,:] = np.reshape(w[tuple(np.repeat(np.arange(end-start), k)), tuple(y[:, 1:k+1].ravel())], (end-start, k))
-        del(w)
+        z[start:end, :] = y[:, 1:k + 1]
+        weigh[start:end, :] = np.reshape(w[tuple(np.repeat(np.arange(end - start), k)), tuple(y[:, 1:k + 1].ravel())],
+                                         (end - start, k))
+        del (w)
 
     ind = np.repeat(np.arange(samples), k)
 
-    P = csr_matrix((np.ones((samples*k)), (ind.ravel(), z.ravel())), shape=(samples,samples))
-    Q = csr_matrix((weigh.ravel(), (ind.ravel(), z.ravel())), shape=(samples,samples))
+    P = csr_matrix((np.ones((samples * k)), (ind.ravel(), z.ravel())), shape=(samples, samples))
+    Q = csr_matrix((weigh.ravel(), (ind.ravel(), z.ravel())), shape=(samples, samples))
 
     Tcsr = minimum_spanning_tree(Q)
     P = P.minimum(P.transpose()) + Tcsr.maximum(Tcsr.transpose())
@@ -139,17 +155,14 @@ def mkNN(X, k, measure='euclidean'):
     return np.asarray(find(P)).T
 
 
-def compressed_data(dataset, n_samples, k, preprocess=None, algo='mknn', isPCA=None):
-
-    datavar = dataset.split('.')
-
-    datafile = os.path.join('..', 'Data', dataset)
-    if datavar[-1] == 'pkl':
-        labels,features = load_data(datafile, n_samples)
-    elif datavar[-1] == 'h5':
-        labels, features = load_data_h5py(datafile, n_samples)
+def compressed_data(dataset, n_samples, k, preprocess=None, algo='mknn', isPCA=None, format='mat'):
+    datadir = get_data_dir(dataset)
+    if format == 'pkl':
+        labels, features = load_train_and_validation(load_data, datadir, n_samples)
+    elif format == 'h5':
+        labels, features = load_train_and_validation(load_data_h5py, datadir, n_samples)
     else:
-        labels,features = load_matdata(datafile, n_samples)
+        labels, features = load_train_and_validation(load_matdata, datadir, n_samples)
 
     features = feature_transformation(features, preprocessing=preprocess)
 
@@ -166,18 +179,18 @@ def compressed_data(dataset, n_samples, k, preprocess=None, algo='mknn', isPCA=N
     else:
         weights = mkNN(features1, k=k, measure='cosine')
 
-    print('The time taken for edge set computation is {}'.format(time()-t0))
+    print('The time taken for edge set computation is {}'.format(time() - t0))
 
-    filepath= os.path.join('..', 'Data', datavar[-2])
-    if datavar[-1] == 'h5':
+    filepath = os.path.join(datadir, 'pretrained')
+    if format == 'h5':
         import h5py
-        fo = h5py.File(filepath+'.h5','w')
+        fo = h5py.File(filepath + '.h5', 'w')
         fo.create_dataset('X', data=features)
-        fo.create_dataset('w', data=weights[:,:2])
+        fo.create_dataset('w', data=weights[:, :2])
         fo.create_dataset('gtlabels', data=labels)
         fo.close()
     else:
-        sio.savemat(filepath+'.mat', mdict={'X':features, 'w':weights[:,:2], 'gtlabels':labels})
+        sio.savemat(filepath + '.mat', mdict={'X': features, 'w': weights[:, :2], 'gtlabels': labels})
 
 
 def parse_args():
@@ -196,11 +209,13 @@ def parse_args():
                         help='Dimension of PCA processing before kNN graph construction')
     parser.add_argument('--samples', dest='nsamples', default=0, type=int,
                         help='total samples to consider')
+    parser.add_argument('--format', choices=['mat', 'pkl', 'h5'], default='mat', help='Dataset format')
 
     args = parser.parse_args()
     return args
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     """
    -----------------------------
    Dataset	|samples| dimension
@@ -221,4 +236,5 @@ if __name__=='__main__':
     print(args)
 
     # storing compressed data
-    compressed_data(args.dataset, args.nsamples, args.k, preprocess=args.prep, algo=args.algo, isPCA=args.pca)
+    compressed_data(args.dataset, args.nsamples, args.k, preprocess=args.prep, algo=args.algo, isPCA=args.pca,
+                    format=args.format)

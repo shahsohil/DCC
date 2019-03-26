@@ -95,3 +95,8 @@ python make_data.py --data easy
 This creates 3 clusters where the centers are colinear to each other. 
 We would then expect to only need 1 dimensional latent space (either x or y) to uniquely project the data
 onto the line passing through the center of the clusters.
+
+Construct mKNN graph with
+```python
+python edgeConstruction.py --dataset easy --samples 600
+```
