@@ -153,8 +153,9 @@ def make_easy_visual_data(path, N=600):
 
 
 def save_misc_data(path, X, Y, N):
-    sio.savemat(osp.join(path, 'traindata.mat'), {'X': X[:N * 4 / 5], 'Y': Y[:N * 4 / 5]})
-    sio.savemat(osp.join(path, 'testdata.mat'), {'X': X[N * 4 / 5:], 'Y': Y[N * 4 / 5:]})
+    threshold_index = int(N * 4/5)
+    sio.savemat(osp.join(path, 'traindata.mat'), {'X': X[:threshold_index], 'Y': Y[:threshold_index]})
+    sio.savemat(osp.join(path, 'testdata.mat'), {'X': X[threshold_index:], 'Y': Y[threshold_index:]})
 
 
 if __name__ == '__main__':
