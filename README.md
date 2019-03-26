@@ -31,7 +31,7 @@ Please create new folder for each dataset under the [data](data) folder. Please 
 We have already provided [train](data/mnist/traindata.mat) and [test](data/mnist/testdata.mat) data files for MNIST dataset. For example, one can start pretraining of SDAE from console as follows:
 
 ```
-$ python pretraining.py —-data mnist —-tensorboard —-id 1 —-niter 50000 —-lr 10 —-step 20000
+$ python pretraining.py --data mnist --tensorboard --id 1 --niter 50000 --lr 10 --step 20000
 ```
 
 Different settings for total iterations, learning rate and stepsize may be required for other datasets. Please find the details under the comment section inside the [pretraining](pytorch/pretraining.py) file.
@@ -41,7 +41,7 @@ Different settings for total iterations, learning rate and stepsize may be requi
 The features from the pretrained SDAE network are extracted as follows:
 
 ```
-$ python extract_feature.py —-data mnist —-net checkpoint_4.pth.tar —-features pretrained
+$ python extract_feature.py --data mnist --net checkpoint_4.pth.tar --features pretrained
 ```
 
 By default, the model checkpoint for pretrained SDAE NW is stored under [results](data/mnist/results).
@@ -51,7 +51,7 @@ By default, the model checkpoint for pretrained SDAE NW is stored under [results
 The [copyGraph](pytorch/copyGraph.py) program is used to merge the preprocessed mkNN graph (using the code provided by [RCC](https://bitbucket.org/sohilas/robust-continuous-clustering/src)) and the extracted pretrained features. Note the mkNN graph is built on the original and not on the SDAE features.
 
 ```
-$ python copyGraph.py —-data mnist —-graph pretrained.mat —-features pretrained.pkl —-out pretrained
+$ python copyGraph.py --data mnist --graph pretrained.mat --features pretrained.pkl --out pretrained
 ```
 
 The above command assumes that the graph is stored in the [pretrained.mat](data/mnist/pretrained.mat) file and the merged file is stored back to pretrained.mat file. 
@@ -65,7 +65,7 @@ Once the features are extracted and graph details merged, one can start training
 For sanity check, we have also provided a [pretrained.mat](data/mnist/pretrained.mat) and SDAE [model](data/mnist/results/checkpoint_4.pth.tar) files for the MNIST dataset located under the [data](data/mnist) folder. For example, one can run DCC on MNIST from console as follows:
 
 ```
-$ python DCC.py —-data mnist -—net checkpoint_4.pth.tar —-tensorboard —-id 1
+$ python DCC.py --data mnist --net checkpoint_4.pth.tar --tensorboard --id 1
 ```
 
 The other preprocessed graph files can be found in gdrive [folder](https://drive.google.com/drive/folders/1vN4IpmjJvRngaGkLSyKVsPaoGXL02mFf?usp=sharing) as provided by the RCC.
