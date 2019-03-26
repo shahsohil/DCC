@@ -10,6 +10,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
+import data_params as dp
 
 from SDAE import sdae_mnist, sdae_reuters, sdae_ytf, sdae_coil100, sdae_yale, sdae_easy
 from convSDAE import convsdae_mnist, convsdae_coil100, convsdae_ytf, convsdae_yale
@@ -75,7 +76,7 @@ def main(args):
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batchsize, shuffle=True, **kwargs)
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=True, **kwargs)
 
-    pretrain(args, outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
+    return pretrain(args, outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
                        'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader)
 
 def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
@@ -109,7 +110,7 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
         numlayers = 6
     elif args.db == 'easy':
         net = sdae_easy(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-        numlayers = 2
+        numlayers = len(dp.easy.dim)
     else:
         raise ValueError("Unexpected database %s" % args.db)
 
@@ -172,6 +173,7 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
             # Save checkpoint
             save_checkpoint({'epoch': epoch+1, 'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()},
                             index, filename=outputdir)
+    return index, net
 
 
 # Training
