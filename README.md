@@ -123,3 +123,8 @@ Merge preprocessed mkNN graph and the pretrained features with
 ```
 python copyGraph.py --data easy --graph pretrained.mat --features pretrained.pkl --out pretrained
 ```
+
+Run DCC with
+```
+python DCC.py --data easy --net checkpoint_2.pth.tar --tensorboard --id 1 --dim 1
+```

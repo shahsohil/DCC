@@ -29,6 +29,10 @@ def makeDCCinp(args):
 
     data = raw_data['X'][:].astype(np.float32)
     Z = raw_data['Z'][:].astype(np.float32)
+    # correct special case where Z is N x 1 and it gets loaded as 1 x N
+    if Z.shape[0] == 1:
+        Z = np.transpose(Z)
+
     labels = np.squeeze(raw_data['gtlabels'][:])
     pairs = raw_data['w'][:, :2].astype(int)
 

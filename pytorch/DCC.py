@@ -7,12 +7,14 @@ import scipy.io as sio
 import argparse
 from config import cfg, get_data_dir, get_output_dir, AverageMeter
 
+import data_params as dp
+
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
-from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale
+from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale, extract_sdae_easy
 from extractconvSDAE import extract_convsdae_mnist, extract_convsdae_coil100, extract_convsdae_ytf, extract_convsdae_yale
 from custom_data import DCCPT_data, DCCFT_data, DCCSampler
 from DCCLoss import DCCWeightedELoss, DCCLoss
@@ -103,6 +105,10 @@ def main():
     elif args.db == 'cyale':
         net = extract_convsdae_yale(slope=reluslope)
         data = data.reshape((-1,1,168,192))
+    elif args.db == dp.easy.name:
+        net = extract_sdae_easy(slope=reluslope, dim=args.dim)
+    else:
+        raise ValueError("Unexpected database %s" % args.db)
 
     totalset = torch.utils.data.ConcatDataset([trainset, testset])
 
@@ -249,9 +255,9 @@ def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, 
         loss = loss1 + loss2
 
         # record loss
-        losses1.update(loss1.data[0], inputs.size(0))
-        losses2.update(loss2.data[0], inputs.size(0))
-        losses.update(loss.data[0], inputs.size(0))
+        losses1.update(loss1.item(), inputs.size(0))
+        losses2.update(loss2.item(), inputs.size(0))
+        losses.update(loss.item(), inputs.size(0))
 
         loss.backward()
         optimizer.step()
