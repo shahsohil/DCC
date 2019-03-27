@@ -128,3 +128,12 @@ Run DCC with
 ```
 python DCC.py --data easy --net checkpoint_2.pth.tar --tensorboard --id 1 --dim 1
 ```
+
+Debug and show how the representatives shift over epochs with
+```
+tensorboard --logdir data/easy/results/runs/DCC/1/ --samples_per_plugin images=100
+```
+
+### Pretraining and DCC together in one script ###
+
+See `easy_example.py` for the previous easy to visualize example all steps done in one script.
