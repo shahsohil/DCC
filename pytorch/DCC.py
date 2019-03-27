@@ -26,7 +26,7 @@ from DCCLoss import DCCWeightedELoss, DCCLoss
 from DCCComputation import makeDCCinp, computeHyperParams, computeObj
 
 # used for logging to TensorBoard
-from tensorboard_logger import configure, log_value, log_images
+from tensorboard_logger import Logger
 
 # Parse all the input argument
 parser = argparse.ArgumentParser(description='PyTorch DCC Finetuning')
@@ -56,16 +56,14 @@ def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
+    logger = None
     if args.tensorboard:
         # One should create folder for storing logs
         loggin_dir = os.path.join(outputdir, 'runs', 'DCC')
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
-        try:
-            configure(os.path.join(loggin_dir, '%s' % (args.id)))
-        except ValueError:
-            print("Ignoring logger reconfiguration")
-            pass
+        loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()
 
@@ -177,18 +175,18 @@ def main(args):
             _delta2 = checkpoint['delta2']
         else:
             print("==> no checkpoint found at '{}'".format(filename))
-            raise
+            raise ValueError
 
     # This is the actual Algorithm
     flag = 0
     for epoch in range(startepoch, args.nepoch):
-        if args.tensorboard:
-            log_value('sigma1', _sigma1, epoch)
-            log_value('sigma2', _sigma2, epoch)
-            log_value('lambda', _lambda, epoch)
+        if logger:
+            logger.log_value('sigma1', _sigma1, epoch)
+            logger.log_value('sigma2', _sigma2, epoch)
+            logger.log_value('lambda', _lambda, epoch)
 
-        train(args, trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda)
-        Z, U, change_in_assign, assignment = test(args, testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
+        train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda, logger)
+        Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag, logger)
 
         if flag:
             # As long as the change in label assignment < threshold, DCC continues to run.
@@ -231,10 +229,10 @@ def load_weights(args, outputdir, net):
         net.load_state_dict(checkpoint['state_dict'])
     else:
         print("==> no checkpoint found at '{}'".format(filename))
-        raise
+        raise ValueError
 
 # Training
-def train(args, trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda):
+def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda, logger):
     losses = AverageMeter()
     losses1 = AverageMeter()
     losses2 = AverageMeter()
@@ -275,14 +273,14 @@ def train(args, trainloader, net, optimizer, criterion1, criterion2, epoch, use_
         optimizer.step()
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('total_loss', losses.avg, epoch)
-        log_value('reconstruction_loss', losses1.avg, epoch)
-        log_value('dcc_loss', losses2.avg, epoch)
+    if logger:
+        logger.log_value('total_loss', losses.avg, epoch)
+        logger.log_value('reconstruction_loss', losses1.avg, epoch)
+        logger.log_value('dcc_loss', losses2.avg, epoch)
 
 
 # Testing
-def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag):
+def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag, logger):
     net.eval()
 
     original = []
@@ -306,8 +304,8 @@ def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numev
     change_in_assign = 0
     assignment = -np.ones(len(labels))
 
-    if args.tensorboard and epoch % 3 == 0:
-        log_images('representatives', plot_to_image(U, 'representatives'), epoch)
+    if logger and epoch % 3 == 0:
+        logger.log_images('representatives', plot_to_image(U, 'representatives'), epoch)
 
     # logs clustering measures only if sigma2 has reached the minimum (delta2)
     if flag:
@@ -315,13 +313,13 @@ def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numev
 
         # log to TensorBoard
         change_in_assign = np.abs(oldassignment - index).sum()
-        if args.tensorboard:
-            log_value('ARI', ari, epoch)
-            log_value('AMI', ami, epoch)
-            log_value('NMI', nmi, epoch)
-            log_value('ACC', acc, epoch)
-            log_value('Numcomponents', n_components, epoch)
-            log_value('labeldiff', change_in_assign, epoch)
+        if logger:
+            logger.log_value('ARI', ari, epoch)
+            logger.log_value('AMI', ami, epoch)
+            logger.log_value('NMI', nmi, epoch)
+            logger.log_value('ACC', acc, epoch)
+            logger.log_value('Numcomponents', n_components, epoch)
+            logger.log_value('labeldiff', change_in_assign, epoch)
 
         oldassignment[...] = index
 

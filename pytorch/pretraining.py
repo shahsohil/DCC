@@ -17,7 +17,7 @@ from convSDAE import convsdae_mnist, convsdae_coil100, convsdae_ytf, convsdae_ya
 from custom_data import DCCPT_data
 
 # used for logging to TensorBoard
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import Logger
 
 # Parse all the input argument
 parser = argparse.ArgumentParser(description='PyTorch SDAE Training')
@@ -48,12 +48,14 @@ def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
+    logger = None
     if args.tensorboard:
         # One should create folder for storing logs
         loggin_dir = os.path.join(outputdir, 'runs', 'pretraining')
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
-        configure(os.path.join(loggin_dir, '%s' % (args.id)))
+        loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()
 
@@ -77,9 +79,9 @@ def main(args):
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=True, **kwargs)
 
     return pretrain(args, outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
-                       'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader)
+                       'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader, logger)
 
-def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
+def pretrain(args, outputdir, params, use_cuda, trainloader, testloader, logger):
     numlayers = params['nlayers']
     lr = params['lrate'][0]
     maxepoch = params['nepoch']
@@ -168,8 +170,8 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
 
         for epoch in range(maxepoch[index]):
             scheduler.step()
-            train(args, trainloader, net, index, optimizer, epoch, use_cuda)
-            test(args, testloader, net, index, epoch, use_cuda)
+            train(trainloader, net, index, optimizer, epoch, use_cuda, logger)
+            test(testloader, net, index, epoch, use_cuda, logger)
             # Save checkpoint
             save_checkpoint({'epoch': epoch+1, 'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()},
                             index, filename=outputdir)
@@ -177,7 +179,7 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader):
 
 
 # Training
-def train(args, trainloader, net, index, optimizer, epoch, use_cuda):
+def train(trainloader, net, index, optimizer, epoch, use_cuda, logger):
     losses = AverageMeter()
 
     print('\nIndex: %d \t Epoch: %d' %(index,epoch))
@@ -198,12 +200,12 @@ def train(args, trainloader, net, index, optimizer, epoch, use_cuda):
         optimizer.step()
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('train_loss_{}'.format(index), losses.avg, epoch)
+    if logger:
+        logger.log_value('train_loss_{}'.format(index), losses.avg, epoch)
 
 
 # Testing
-def test(args, testloader, net, index, epoch, use_cuda):
+def test(testloader, net, index, epoch, use_cuda, logger):
     losses = AverageMeter()
 
     net.eval()
@@ -218,8 +220,8 @@ def test(args, testloader, net, index, epoch, use_cuda):
         losses.update(outputs.item(), inputs.size(0))
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('val_loss_{}'.format(index), losses.avg, epoch)
+    if logger:
+        logger.log_value('val_loss_{}'.format(index), losses.avg, epoch)
 
 
 # Saving checkpoint
