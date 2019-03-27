@@ -61,7 +61,11 @@ def main(args):
         loggin_dir = os.path.join(outputdir, 'runs', 'DCC')
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
-        configure(os.path.join(loggin_dir, '%s' % (args.id)))
+        try:
+            configure(os.path.join(loggin_dir, '%s' % (args.id)))
+        except ValueError:
+            print("Ignoring logger reconfiguration")
+            pass
 
     use_cuda = torch.cuda.is_available()
 
