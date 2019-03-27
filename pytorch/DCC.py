@@ -328,7 +328,7 @@ def test(args, testloader, net, criterion, epoch, use_cuda, _delta, pairs, numev
     return features, U, change_in_assign, assignment
 
 def plot_to_image(U, title):
-    plt.figure()
+    plt.clf()
     plt.scatter(U[:,0], U[:,1])
     plt.title(title)
     buf = io.BytesIO()
