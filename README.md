@@ -26,6 +26,8 @@ The source code and dataset are published under the MIT license. See [LICENSE](L
 
 ## Pretraining SDAE ##
 
+##### Note: Please find required files and checkpoints for MNIST dataset shared [here](https://drive.google.com/drive/folders/10DjPtVRHgZcM-dshm4MuyB5DmxpfG_hV?usp=sharing).
+
 Please create new folder for each dataset under the [data](data) folder. Please follow the structure of [mnist](data/mnist) dataset. The training and the validation data for each dataset must be placed under their respective folder.
 
 We have already provided [train](data/mnist/traindata.mat) and [test](data/mnist/testdata.mat) data files for MNIST dataset. For example, one can start pretraining of SDAE from console as follows:
@@ -79,8 +81,6 @@ Towards the end of run of DCC algorithm, i.e., once the stopping criterion is me
 The tensorboard logs for both pretraining and DCC will be stored in the "runs/DCC" folder under [results](data/mnist/results/). The final embedded features 'U' and cluster assignment for each sample is saved in 'features.mat' file under [results](data/mnist/results/).  
 
 ### Creating input ###
-
-Please find required files for MNIST dataset shared [here](https://drive.google.com/drive/folders/10DjPtVRHgZcM-dshm4MuyB5DmxpfG_hV?usp=sharing).
 
 The input file for SDAE pretraining, [traindata.mat](data/mnist/traindata.mat) and [testdata.mat](data/mnist/testdata.mat), stores the features of the 'N' data samples in a matrix format N x D. We followed 4:1 ratio to split train and validation data. The provided [make_data.py](pytorch/make_data.py) can be used to build training and validation data. The distinction of training and validation set is used only for the pretraining stage. For end-to-end training, there is no such distinction in unsupervised learning and hence all data has been used. 
 
