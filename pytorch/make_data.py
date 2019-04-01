@@ -149,7 +149,13 @@ def make_easy_visual_data(path, N=600):
     centers = [(m, m * line[0] + line[1]) for m in (-4, 0, 6)]
     cluster_std = [1, 1, 1.5]
     X, labels = make_blobs(n_samples=N, cluster_std=cluster_std, centers=centers, n_features=len(centers[0]))
+
+    # scale data
+    minmaxscale = MinMaxScaler().fit(X)
+    X = minmaxscale.transform(X)
+
     save_misc_data(path, X, labels, N)
+    return X, labels
 
 
 def save_misc_data(path, X, Y, N):
