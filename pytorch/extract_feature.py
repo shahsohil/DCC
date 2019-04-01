@@ -3,9 +3,14 @@ import os
 import random
 import numpy as np
 import argparse
-import cPickle
 from config import cfg, get_data_dir, get_output_dir
 import data_params as dp
+
+# python 3 compatibility
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 import torch
 from torch.autograd import Variable
@@ -98,7 +103,7 @@ def main(args):
         fo.close()
     else:
         fo = open(feat_path + '.pkl', 'wb')
-        cPickle.dump({'labels': labels, 'Z': np.squeeze(features_dr), 'data': np.squeeze(features)}, fo, protocol=2)
+        pickle.dump({'labels': labels, 'Z': np.squeeze(features_dr), 'data': np.squeeze(features)}, fo, protocol=2)
         fo.close()
     return features, features_dr, labels
 

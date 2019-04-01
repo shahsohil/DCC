@@ -3,9 +3,14 @@ import os
 import h5py
 import numpy as np
 import argparse
-import cPickle
 import scipy.io as sio
 from config import get_data_dir, get_output_dir
+
+# python 3 compatibility
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 # Note that just like in RCC & RCC-DR, the graph is built on original data.
 # Once the features are extracted from the pretrained SDAE,
@@ -35,7 +40,7 @@ def main(args):
             data2 = h5py.File(outputfile+'.h5','w')
         else:
             fo = open(featurefile,'rb')
-            data0 = cPickle.load(fo)
+            data0 = pickle.load(fo)
             data1 = sio.loadmat(graphfile)
             fo.close()
 
