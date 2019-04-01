@@ -3,7 +3,7 @@ import os
 import random
 import numpy as np
 import argparse
-from config import cfg, get_data_dir, get_output_dir, AverageMeter
+from config import cfg, get_data_dir, get_output_dir, AverageMeter, remove_files_in_dir
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -55,6 +55,8 @@ def main(args):
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
         loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        if args.clean_log:
+            remove_files_in_dir(loggin_dir)
         logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()

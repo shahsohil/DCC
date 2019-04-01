@@ -6,7 +6,7 @@ import numpy as np
 import scipy.io as sio
 import argparse
 
-from config import cfg, get_data_dir, get_output_dir, AverageMeter
+from config import cfg, get_data_dir, get_output_dir, AverageMeter, remove_files_in_dir
 
 import data_params as dp
 import matplotlib.pyplot as plt
@@ -48,6 +48,7 @@ parser.add_argument('--h5', dest='h5', action='store_true', help='to store as h5
 parser.add_argument('--dim', type=int, help='dimension of embedding space', default=10)
 parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action='store_true')
 parser.add_argument('--id', type=int, help='identifying number for storing tensorboard logs')
+parser.add_argument('--clean_log', action='store_true', help='remove previous tensorboard logs under this ID')
 
 
 def main(args):
@@ -63,6 +64,8 @@ def main(args):
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
         loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        if args.clean_log:
+            remove_files_in_dir(loggin_dir)
         logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()
