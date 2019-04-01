@@ -16,7 +16,8 @@ N = 600
 make_data.make_easy_visual_data(datadir, N)
 
 # then construct mkNN graph
-compressed_data(dp.easy.name, N, 10, preprocess='none', algo='mkNN', isPCA=None, format='mat')
+k = 50
+compressed_data(dp.easy.name, N, k, preprocess='none', algo='kNN', isPCA=None, format='mat')
 
 # then pretrain to get features
 args = edict()
@@ -34,7 +35,7 @@ args.ngpu = 1
 args.deviceID = 0
 args.tensorboard = True
 args.h5 = False
-args.id = 1
+args.id = 6
 args.dim = 2
 args.manualSeed = cfg.RNG_SEED
 
