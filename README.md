@@ -20,7 +20,7 @@ The source code and dataset are published under the MIT license. See [LICENSE](L
 
 ## Requirement ##
 
-* Python 2.7
+* Python >= 2.7
 * [Pytorch](http://pytorch.org/) >= v0.2.0
 * [Tensorboard-pytorch](https://github.com/lanpa/tensorboard-pytorch)
 
@@ -137,3 +137,6 @@ tensorboard --logdir data/easy/results/runs/DCC/1/ --samples_per_plugin images=1
 ### Pretraining and DCC together in one script ###
 
 See `easy_example.py` for the previous easy to visualize example all steps done in one script.
+Execute the script to perform the previous section all together.
+You can visualize the results, such as how the representatives drift over iterations with the
+tensorboard command above and navigating to the Images tab.
