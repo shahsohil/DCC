@@ -39,8 +39,10 @@ def main(args):
             data1 = sio.loadmat(graphfile)
             fo.close()
 
-        a,b = np.where(data0['data'][:].astype(np.float32).reshape((len(data0['labels'][:]),-1)) -
-                       data1['X'][:].astype(np.float32).reshape((len(data1['gtlabels'].T),-1)))
+        x0 = data0['data'][:].astype(np.float32).reshape((len(data0['labels'][:]),-1))
+        x1 = data1['X'][:].astype(np.float32).reshape((len(data1['gtlabels'].T),-1))
+
+        a,b = np.where(x0 - x1)
         assert not a.size
 
         joined_data = {'gtlabels':data0['labels'][:], 'X':data0['data'][:].astype(np.float32),
