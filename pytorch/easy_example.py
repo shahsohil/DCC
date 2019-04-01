@@ -2,6 +2,7 @@
 from config import cfg, get_data_dir
 from easydict import EasyDict as edict
 from edgeConstruction import compressed_data
+import matplotlib.pyplot as plt
 import data_params as dp
 import make_data
 import pretraining
@@ -13,7 +14,15 @@ datadir = get_data_dir(dp.easy.name)
 N = 600
 
 # first create the data
-make_data.make_easy_visual_data(datadir, N)
+X, labels = make_data.make_easy_visual_data(datadir, N)
+
+# visualize data
+# we know there are 3 classes
+for c in range(3):
+    x = X[labels==c,:]
+    plt.scatter(x[:,0], x[:,1], label=str(c))
+plt.legend()
+plt.show()
 
 # then construct mkNN graph
 k = 50
@@ -38,6 +47,7 @@ args.h5 = False
 args.id = 6
 args.dim = 2
 args.manualSeed = cfg.RNG_SEED
+args.clean_log = True
 
 # if we comment out the next pretraining step, use the latest checkpoint
 index = len(dp.easy.dim)-1
