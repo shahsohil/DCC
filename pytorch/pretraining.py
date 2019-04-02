@@ -12,8 +12,6 @@ from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 import data_params as dp
 
-from SDAE import sdae_mnist, sdae_reuters, sdae_ytf, sdae_coil100, sdae_yale, sdae_easy
-from convSDAE import convsdae_mnist, convsdae_coil100, convsdae_ytf, convsdae_yale
 from custom_data import DCCPT_data
 
 # used for logging to TensorBoard
@@ -90,33 +88,17 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader, logger)
     stepsize = params['step']
     startlayer = 0
 
-    # For simplicity, I have created placeholder for each datasets and model
-    if args.db == 'mnist':
-        net = sdae_mnist(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'reuters' or args.db == 'rcv1':
-        net = sdae_reuters(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'ytf':
-        net = sdae_ytf(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'coil100':
-        net = sdae_coil100(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'yale':
-        net = sdae_yale(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'cmnist':
-        net = convsdae_mnist(dropout=params['dropout'], slope=params['reluslope'])
-    elif args.db == 'ccoil100':
-        net = convsdae_coil100(dropout=params['dropout'], slope=params['reluslope'])
+    net = dp.load_predefined_net(args, params)
+
+    # correct for the number of layers
+    if args.db == 'ccoil100':
         numlayers = 6
     elif args.db == 'cytf':
-        net = convsdae_ytf(dropout=params['dropout'], slope=params['reluslope'])
         numlayers = 5
     elif args.db == 'cyale':
-        net = convsdae_yale(dropout=params['dropout'], slope=params['reluslope'])
         numlayers = 6
     elif args.db == 'easy':
-        net = sdae_easy(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
         numlayers = len(dp.easy.dim)
-    else:
-        raise ValueError("Unexpected database %s" % args.db)
 
     # For the final FT stage of SDAE pretraining, the total epoch is twice that of previous stages.
     maxepoch = [maxepoch]*numlayers + [maxepoch*2]
@@ -131,7 +113,7 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader, logger)
             startlayer = args.level+1
         else:
             print("==> no checkpoint found at '{}'".format(filename))
-            raise
+            raise ValueError
 
     if use_cuda:
         net.cuda()

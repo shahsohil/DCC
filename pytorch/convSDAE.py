@@ -96,15 +96,3 @@ class convSDAE(nn.Module):
         out = self.loss(out, inp)
         return out
 
-def convsdae_mnist(dropout=0.2, slope=0.0):
-    return convSDAE(dim=[1, 50, 50, 50, 10], output_padding=[0,1,0], numpen=4, dropout=dropout, slope=slope)
-
-def convsdae_coil100(dropout=0.2, slope=0.0):
-    return convSDAE(dim=[3, 50, 50, 50, 50, 50, 10], output_padding=[0, 1, 1, 1, 1], numpen=4, dropout=dropout, slope=slope)
-
-def convsdae_ytf(dropout=0.2, slope=0.0):
-    return convSDAE(dim=[3, 50, 50, 50, 50, 10], output_padding=[1, 0, 1, 0], numpen=4, dropout=dropout, slope=slope)
-
-def convsdae_yale(dropout=0.2, slope=0.0):
-    return convSDAE(dim=[1, 50, 50, 50, 50, 50, 10], output_padding=[(0,0), (1,1), (1,1), (0,1), (0,1)], numpen=6,
-                    dropout=dropout, slope=slope)

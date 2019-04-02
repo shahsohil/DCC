@@ -19,8 +19,6 @@ import torch.optim as optim
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
-from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale, extract_sdae_easy
-from extractconvSDAE import extract_convsdae_mnist, extract_convsdae_coil100, extract_convsdae_ytf, extract_convsdae_yale
 from custom_data import DCCPT_data, DCCFT_data, DCCSampler
 from DCCLoss import DCCWeightedELoss, DCCLoss
 from DCCComputation import makeDCCinp, computeHyperParams, computeObj
@@ -51,7 +49,7 @@ parser.add_argument('--id', type=int, help='identifying number for storing tenso
 parser.add_argument('--clean_log', action='store_true', help='remove previous tensorboard logs under this ID')
 
 
-def main(args):
+def main(args, net=None):
     global oldassignment
 
     datadir = get_data_dir(args.db)
@@ -79,7 +77,7 @@ def main(args):
         torch.backends.cudnn.enabled = True
         cudnn.benchmark = True
 
-    reluslope = 0.0
+
     startepoch = 0
     kwargs = {'num_workers': 5, 'pin_memory': True} if use_cuda else {}
 
@@ -92,32 +90,19 @@ def main(args):
     data, labels, pairs, Z, sampweight = makeDCCinp(args)
 
     # For simplicity, I have created placeholder for each datasets and model
-    if args.db == 'mnist':
-        net = extract_sdae_mnist(slope=reluslope, dim=args.dim)
-    elif args.db == 'reuters' or args.db == 'rcv1':
-        net = extract_sdae_reuters(slope=reluslope, dim=args.dim)
-    elif args.db == 'ytf':
-        net = extract_sdae_ytf(slope=reluslope, dim=args.dim)
-    elif args.db == 'coil100':
-        net = extract_sdae_coil100(slope=reluslope, dim=args.dim)
-    elif args.db == 'yale':
-        net = extract_sdae_yale(slope=reluslope, dim=args.dim)
-    elif args.db == 'cmnist':
-        net = extract_convsdae_mnist(slope=reluslope)
-        data = data.reshape((-1,1,28,28))
+    load_pretraining = True if net is None else False
+    if net is None:
+        net = dp.load_predefined_extract_net(args)
+
+    # reshaping data for some datasets
+    if args.db == 'cmnist':
+        data = data.reshape((-1, 1, 28, 28))
     elif args.db == 'ccoil100':
-        net = extract_convsdae_coil100(slope=reluslope)
-        data = data.reshape((-1,3,128,128))
+        data = data.reshape((-1, 3, 128, 128))
     elif args.db == 'cytf':
-        net = extract_convsdae_ytf(slope=reluslope)
-        data = data.reshape((-1,3,55,55))
+        data = data.reshape((-1, 3, 55, 55))
     elif args.db == 'cyale':
-        net = extract_convsdae_yale(slope=reluslope)
-        data = data.reshape((-1,1,168,192))
-    elif args.db == dp.easy.name:
-        net = extract_sdae_easy(slope=reluslope, dim=args.dim)
-    else:
-        raise ValueError("Unexpected database %s" % args.db)
+        data = data.reshape((-1, 1, 168, 192))
 
     totalset = torch.utils.data.ConcatDataset([trainset, testset])
 
@@ -131,7 +116,8 @@ def main(args):
     batch_sampler = DCCSampler(trainset, shuffle=True, batch_size=args.batchsize)
 
     # copying model params from Pretrained (SDAE) weights file
-    load_weights(args, outputdir, net)
+    if load_pretraining:
+        load_weights(args, outputdir, net)
 
 
     # creating objects for loss functions, U's are initialized to Z here
