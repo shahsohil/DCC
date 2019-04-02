@@ -100,7 +100,7 @@ def kNN(X, k, measure='euclidean'):
             else:
                 weights.append((j, i, d * d))
     weights = sorted(weights, key=lambda r: (r[0], r[1]))
-    return unique_rows(np.asarray(weights))
+    return np.unique(np.asarray(weights), axis=0)
 
 
 def mkNN(X, k, measure='euclidean'):
