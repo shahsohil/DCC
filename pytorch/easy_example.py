@@ -67,7 +67,7 @@ index = len(dp.easy.dim) - 1
 net = None
 # if we comment out the next pretraining step we use the identity network
 net = IdentityNet()
-# index, _ = pretraining.main(args)
+index, net = pretraining.main(args)
 
 # extract pretrained features
 args.feat = 'pretrained'

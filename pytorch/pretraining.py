@@ -159,7 +159,10 @@ def pretrain(args, outputdir, params, use_cuda, trainloader, testloader, logger)
             # Save checkpoint
             save_checkpoint({'epoch': epoch+1, 'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()},
                             index, filename=outputdir)
-    return index, net
+
+    outnet = dp.load_predefined_extract_net(args)
+    outnet.load_state_dict(net.state_dict())
+    return index, outnet
 
 
 # Training
