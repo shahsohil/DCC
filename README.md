@@ -140,3 +140,6 @@ See `easy_example.py` for the previous easy to visualize example all steps done 
 Execute the script to perform the previous section all together.
 You can visualize the results, such as how the representatives drift over iterations with the
 tensorboard command above and navigating to the Images tab.
+
+With an autoencoder, the representatives shift over epochs like:
+![shift with autoencoder](https://i.imgur.com/TXMp6M1.gif)
