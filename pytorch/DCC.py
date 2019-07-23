@@ -178,10 +178,10 @@ def main(args, net=None):
         Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag, logger)
 
         if flag:
-            # As long as the change in label assignment > threshold, DCC continues to run.
+            # As long as the change in label assignment < threshold, DCC continues to run.
             # Note: This condition is always met in the very first epoch after the flag is set.
             # This false criterion is overwritten by checking for the condition twice.
-            if change_in_assign < stopping_threshold:
+            if change_in_assign > stopping_threshold:
                 flag += 1
             if flag == 4:
                 break
