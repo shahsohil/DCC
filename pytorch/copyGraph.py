@@ -23,9 +23,6 @@ parser.add_argument('--features', dest='feat', help='path to the feature file', 
 parser.add_argument('--out', dest='out', help='path to the output file', default=None, type=str)
 parser.add_argument('--h5', dest='h5', action='store_true', help='to store as h5py file')
 
-if __name__ == '__main__':
-    args = parser.parse_args()
-
 
 def main(args):
     datadir = get_data_dir(args.db)
@@ -69,3 +66,8 @@ def main(args):
     else:
         print('one or both the files not found')
         raise FileNotFoundError
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    main(args)
