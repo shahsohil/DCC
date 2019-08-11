@@ -69,15 +69,3 @@ class extractconvSDAE(nn.Module):
                 out = F.leaky_relu(out, negative_slope=self.reluslope)
         return encoded, out
 
-def extract_convsdae_mnist(slope=0.0):
-    return extractconvSDAE(dim=[1, 50, 50, 50, 10], output_padding=[0,1,0], numpen=4, slope=slope)
-
-def extract_convsdae_coil100(slope=0.0):
-    return extractconvSDAE(dim=[3, 50, 50, 50, 50, 50, 10], output_padding=[0, 1, 1, 1, 1], numpen=4, slope=slope)
-
-def extract_convsdae_ytf(slope=0.0):
-    return extractconvSDAE(dim=[3, 50, 50, 50, 50, 10], output_padding=[1, 0, 1, 0], numpen=4, slope=slope)
-
-def extract_convsdae_yale(slope=0.0):
-    return extractconvSDAE(dim=[1, 50, 50, 50, 50, 50, 10], output_padding=[(0,0), (1,1), (1,1), (0,1), (0,1)], numpen=6,
-                           slope=slope)

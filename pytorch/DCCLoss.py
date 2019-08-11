@@ -34,9 +34,13 @@ class DCCLoss(nn.Module):
     def forward(self, enc_out, sampweights, pairweights, pairs, index, _sigma1, _sigma2, _lambda):
         centroids = self.U[index]
 
+        # note that sigmas here are labelled mu in the paper
+        # data loss
+        # enc_out is Y, the original embedding without shift
         out1 = torch.norm((enc_out - centroids).view(len(enc_out), -1), p=2, dim=1) ** 2
         out11 = torch.sum(_sigma1 * sampweights * out1 / (_sigma1 + out1))
 
+        # pairwise loss
         out2 = torch.norm((centroids[pairs[:, 0]] - centroids[pairs[:, 1]]).view(len(pairs), -1), p=2, dim=1) ** 2
 
         out21 = _lambda * torch.sum(_sigma2 * pairweights * out2 / (_sigma2 + out2))

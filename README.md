@@ -20,7 +20,7 @@ The source code and dataset are published under the MIT license. See [LICENSE](L
 
 ## Requirement ##
 
-* Python 2.7
+* Python >= 2.7
 * [Pytorch](http://pytorch.org/) >= v0.2.0
 * [Tensorboard-pytorch](https://github.com/lanpa/tensorboard-pytorch)
 
@@ -85,3 +85,61 @@ The tensorboard logs for both pretraining and DCC will be stored in the "runs/DC
 The input file for SDAE pretraining, [traindata.mat](data/mnist/traindata.mat) and [testdata.mat](data/mnist/testdata.mat), stores the features of the 'N' data samples in a matrix format N x D. We followed 4:1 ratio to split train and validation data. The provided [make_data.py](pytorch/make_data.py) can be used to build training and validation data. The distinction of training and validation set is used only for the pretraining stage. For end-to-end training, there is no such distinction in unsupervised learning and hence all data has been used. 
 
 To construct mkNN edge set and to create preprocessed input file, [pretrained.mat](data/mnist/pretrained.mat), from the raw feature file, use [edgeConstruction.py](https://bitbucket.org/sohilas/robust-continuous-clustering/src/0516c0e1c65027ca0ffa1f09e0aa3074b99dea80/Toolbox/edgeConstruction.py) released by RCC. Please follow the instruction therein. Note that mkNN graph is built on the complete dataset. For simplicity, code (post pretraining phase) follows the data ordering of \[trainset, testset\] to arrange the data. This should be consistent even with mkNN construction.
+
+### Understanding Steps Through Visual Example ###
+
+Generate 2D clustered data with
+```
+python make_data.py --data easy
+```
+This creates 3 clusters where the centers are colinear to each other. 
+We would then expect to only need 1 dimensional latent space (either x or y) to uniquely project the data
+onto the line passing through the center of the clusters.
+
+![generated ground truth](https://i.imgur.com/H61xQix.png)
+
+Construct mKNN graph with
+```
+python edgeConstruction.py --dataset easy --samples 600
+```
+
+Pretrain SDAE with
+```
+python pretraining.py --data easy --tensorboard --id 1 --niter 500 --dim 1 --lr 0.0001 --step 300
+```
+
+You can debug the pretraining losses using tensorboard (needs tensorflow) with
+```
+tensorboard --logdir data/easy/results/runs/pretraining/1/
+```
+Then navigate to the http link that is logged in console.
+
+Extract pretrained features
+```
+python extract_feature.py --data easy --net checkpoint_2.pth.tar --features pretrained --dim 1
+```
+
+Merge preprocessed mkNN graph and the pretrained features with
+```
+python copyGraph.py --data easy --graph pretrained.mat --features pretrained.pkl --out pretrained
+```
+
+Run DCC with
+```
+python DCC.py --data easy --net checkpoint_2.pth.tar --tensorboard --id 1 --dim 1
+```
+
+Debug and show how the representatives shift over epochs with
+```
+tensorboard --logdir data/easy/results/runs/DCC/1/ --samples_per_plugin images=100
+```
+
+### Pretraining and DCC together in one script ###
+
+See `easy_example.py` for the previous easy to visualize example all steps done in one script.
+Execute the script to perform the previous section all together.
+You can visualize the results, such as how the representatives drift over iterations with the
+tensorboard command above and navigating to the Images tab.
+
+With an autoencoder, the representatives shift over epochs like:
+![shift with autoencoder](https://i.imgur.com/TXMp6M1.gif)

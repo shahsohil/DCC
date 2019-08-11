@@ -60,18 +60,3 @@ class SDAE(nn.Module):
                     out = F.leaky_relu(out, negative_slope=self.reluslope)
         out = self.loss(out, inp)
         return out
-
-def sdae_mnist(dropout=0.2, slope=0.0, dim=10):
-    return SDAE(dim=[784, 500, 500, 2000, dim], dropout=dropout, slope=slope)
-
-def sdae_reuters(dropout=0.2, slope=0.0, dim=10):
-    return SDAE(dim=[2000, 500, 500, 2000, dim], dropout=dropout, slope=slope)
-
-def sdae_ytf(dropout=0.2, slope=0.0, dim=10):
-    return SDAE(dim=[9075, 500, 500, 2000, dim], dropout=dropout, slope=slope)
-
-def sdae_coil100(dropout=0.2, slope=0.0, dim=10):
-    return SDAE(dim=[49152, 500, 500, 2000, dim], dropout=dropout, slope=slope)
-
-def sdae_yale(dropout=0.2, slope=0.0, dim=10):
-    return SDAE(dim=[32256, 500, 500, 2000, dim], dropout=dropout, slope=slope)

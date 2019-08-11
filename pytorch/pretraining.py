@@ -3,20 +3,19 @@ import os
 import random
 import numpy as np
 import argparse
-from config import cfg, get_data_dir, get_output_dir, AverageMeter
+from config import cfg, get_data_dir, get_output_dir, AverageMeter, remove_files_in_dir
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
+import data_params as dp
 
-from SDAE import sdae_mnist, sdae_reuters, sdae_ytf, sdae_coil100, sdae_yale
-from convSDAE import convsdae_mnist, convsdae_coil100, convsdae_ytf, convsdae_yale
 from custom_data import DCCPT_data
 
 # used for logging to TensorBoard
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import Logger
 
 # Parse all the input argument
 parser = argparse.ArgumentParser(description='PyTorch SDAE Training')
@@ -43,19 +42,20 @@ parser.add_argument('--h5', dest='h5', help='to store as h5py file', default=Fal
 parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action='store_true')
 parser.add_argument('--id', type=int, help='identifying number for storing tensorboard logs')
 
-def main():
-    global args
-
-    args = parser.parse_args()
+def main(args):
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
+    logger = None
     if args.tensorboard:
         # One should create folder for storing logs
         loggin_dir = os.path.join(outputdir, 'runs', 'pretraining')
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
-        configure(os.path.join(loggin_dir, '%s' % (args.id)))
+        loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        if args.clean_log:
+            remove_files_in_dir(loggin_dir)
+        logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()
 
@@ -78,38 +78,27 @@ def main():
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batchsize, shuffle=True, **kwargs)
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=True, **kwargs)
 
-    pretrain(outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
-                       'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader)
+    return pretrain(args, outputdir, {'nlayers':4, 'dropout':0.2, 'reluslope':0.0,
+                       'nepoch':nepoch, 'lrate':[args.lr], 'wdecay':[0.0], 'step':step}, use_cuda, trainloader, testloader, logger)
 
-def pretrain(outputdir, params, use_cuda, trainloader, testloader):
+def pretrain(args, outputdir, params, use_cuda, trainloader, testloader, logger):
     numlayers = params['nlayers']
     lr = params['lrate'][0]
     maxepoch = params['nepoch']
     stepsize = params['step']
     startlayer = 0
 
-    # For simplicity, I have created placeholder for each datasets and model
-    if args.db == 'mnist':
-        net = sdae_mnist(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'reuters' or args.db == 'rcv1':
-        net = sdae_reuters(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'ytf':
-        net = sdae_ytf(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'coil100':
-        net = sdae_coil100(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'yale':
-        net = sdae_yale(dropout=params['dropout'], slope=params['reluslope'], dim=args.dim)
-    elif args.db == 'cmnist':
-        net = convsdae_mnist(dropout=params['dropout'], slope=params['reluslope'])
-    elif args.db == 'ccoil100':
-        net = convsdae_coil100(dropout=params['dropout'], slope=params['reluslope'])
+    net = dp.load_predefined_net(args, params)
+
+    # correct for the number of layers
+    if args.db == 'ccoil100':
         numlayers = 6
     elif args.db == 'cytf':
-        net = convsdae_ytf(dropout=params['dropout'], slope=params['reluslope'])
         numlayers = 5
     elif args.db == 'cyale':
-        net = convsdae_yale(dropout=params['dropout'], slope=params['reluslope'])
         numlayers = 6
+    elif args.db == 'easy':
+        numlayers = len(dp.easy.dim)
 
     # For the final FT stage of SDAE pretraining, the total epoch is twice that of previous stages.
     maxepoch = [maxepoch]*numlayers + [maxepoch*2]
@@ -124,7 +113,7 @@ def pretrain(outputdir, params, use_cuda, trainloader, testloader):
             startlayer = args.level+1
         else:
             print("==> no checkpoint found at '{}'".format(filename))
-            raise
+            raise ValueError
 
     if use_cuda:
         net.cuda()
@@ -165,15 +154,19 @@ def pretrain(outputdir, params, use_cuda, trainloader, testloader):
 
         for epoch in range(maxepoch[index]):
             scheduler.step()
-            train(trainloader, net, index, optimizer, epoch, use_cuda)
-            test(testloader, net, index, epoch, use_cuda)
+            train(trainloader, net, index, optimizer, epoch, use_cuda, logger)
+            test(testloader, net, index, epoch, use_cuda, logger)
             # Save checkpoint
             save_checkpoint({'epoch': epoch+1, 'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()},
                             index, filename=outputdir)
 
+    outnet = dp.load_predefined_extract_net(args)
+    outnet.load_state_dict(net.state_dict())
+    return index, outnet
+
 
 # Training
-def train(trainloader, net, index, optimizer, epoch, use_cuda):
+def train(trainloader, net, index, optimizer, epoch, use_cuda, logger):
     losses = AverageMeter()
 
     print('\nIndex: %d \t Epoch: %d' %(index,epoch))
@@ -188,18 +181,18 @@ def train(trainloader, net, index, optimizer, epoch, use_cuda):
         outputs = net(inputs_Var, index)
 
         # record loss
-        losses.update(outputs.data[0], inputs.size(0))
+        losses.update(outputs.item(), inputs.size(0))
 
         outputs.backward()
         optimizer.step()
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('train_loss_{}'.format(index), losses.avg, epoch)
+    if logger:
+        logger.log_value('train_loss_{}'.format(index), losses.avg, epoch)
 
 
 # Testing
-def test(testloader, net, index, epoch, use_cuda):
+def test(testloader, net, index, epoch, use_cuda, logger):
     losses = AverageMeter()
 
     net.eval()
@@ -211,11 +204,11 @@ def test(testloader, net, index, epoch, use_cuda):
         outputs = net(inputs_Var, index)
 
         # measure accuracy and record loss
-        losses.update(outputs.data[0], inputs.size(0))
+        losses.update(outputs.item(), inputs.size(0))
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('val_loss_{}'.format(index), losses.avg, epoch)
+    if logger:
+        logger.log_value('val_loss_{}'.format(index), losses.avg, epoch)
 
 
 # Saving checkpoint
@@ -223,4 +216,5 @@ def save_checkpoint(state, index, filename):
     torch.save(state, filename+'/checkpoint_%d.pth.tar' % index)
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)

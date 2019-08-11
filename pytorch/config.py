@@ -1,4 +1,6 @@
+from __future__ import print_function
 import os.path as osp
+import os
 from easydict import EasyDict as edict
 
 __C = edict()
@@ -56,6 +58,18 @@ def get_output_dir(db):
     """
     path = osp.abspath(osp.join(__C.ROOT_DIR, 'data', db, 'results'))
     return path
+
+def remove_files_in_dir(dir):
+    if not osp.isdir(dir):
+        return
+    for file in os.listdir(dir):
+        file_path = os.path.join(dir, file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(e)
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

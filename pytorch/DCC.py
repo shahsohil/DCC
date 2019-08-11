@@ -5,21 +5,26 @@ import math
 import numpy as np
 import scipy.io as sio
 import argparse
-from config import cfg, get_data_dir, get_output_dir, AverageMeter
+
+from config import cfg, get_data_dir, get_output_dir, AverageMeter, remove_files_in_dir
+
+import data_params as dp
+import matplotlib.pyplot as plt
+import io
+import PIL.Image
+from torchvision.transforms import ToTensor
 
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 
-from extractSDAE import extract_sdae_mnist, extract_sdae_reuters, extract_sdae_ytf, extract_sdae_coil100, extract_sdae_yale
-from extractconvSDAE import extract_convsdae_mnist, extract_convsdae_coil100, extract_convsdae_ytf, extract_convsdae_yale
 from custom_data import DCCPT_data, DCCFT_data, DCCSampler
 from DCCLoss import DCCWeightedELoss, DCCLoss
 from DCCComputation import makeDCCinp, computeHyperParams, computeObj
 
 # used for logging to TensorBoard
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import Logger
 
 # Parse all the input argument
 parser = argparse.ArgumentParser(description='PyTorch DCC Finetuning')
@@ -41,21 +46,25 @@ parser.add_argument('--h5', dest='h5', action='store_true', help='to store as h5
 parser.add_argument('--dim', type=int, help='dimension of embedding space', default=10)
 parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action='store_true')
 parser.add_argument('--id', type=int, help='identifying number for storing tensorboard logs')
+parser.add_argument('--clean_log', action='store_true', help='remove previous tensorboard logs under this ID')
 
 
-def main():
-    global args, oldassignment
+def main(args, net=None):
+    global oldassignment
 
-    args = parser.parse_args()
     datadir = get_data_dir(args.db)
     outputdir = get_output_dir(args.db)
 
+    logger = None
     if args.tensorboard:
         # One should create folder for storing logs
         loggin_dir = os.path.join(outputdir, 'runs', 'DCC')
         if not os.path.exists(loggin_dir):
             os.makedirs(loggin_dir)
-        configure(os.path.join(loggin_dir, '%s' % (args.id)))
+        loggin_dir = os.path.join(loggin_dir, '%s' % (args.id))
+        if args.clean_log:
+            remove_files_in_dir(loggin_dir)
+        logger = Logger(loggin_dir)
 
     use_cuda = torch.cuda.is_available()
 
@@ -68,7 +77,7 @@ def main():
         torch.backends.cudnn.enabled = True
         cudnn.benchmark = True
 
-    reluslope = 0.0
+
     startepoch = 0
     kwargs = {'num_workers': 5, 'pin_memory': True} if use_cuda else {}
 
@@ -81,28 +90,19 @@ def main():
     data, labels, pairs, Z, sampweight = makeDCCinp(args)
 
     # For simplicity, I have created placeholder for each datasets and model
-    if args.db == 'mnist':
-        net = extract_sdae_mnist(slope=reluslope, dim=args.dim)
-    elif args.db == 'reuters' or args.db == 'rcv1':
-        net = extract_sdae_reuters(slope=reluslope, dim=args.dim)
-    elif args.db == 'ytf':
-        net = extract_sdae_ytf(slope=reluslope, dim=args.dim)
-    elif args.db == 'coil100':
-        net = extract_sdae_coil100(slope=reluslope, dim=args.dim)
-    elif args.db == 'yale':
-        net = extract_sdae_yale(slope=reluslope, dim=args.dim)
-    elif args.db == 'cmnist':
-        net = extract_convsdae_mnist(slope=reluslope)
-        data = data.reshape((-1,1,28,28))
+    load_pretraining = True if net is None else False
+    if net is None:
+        net = dp.load_predefined_extract_net(args)
+
+    # reshaping data for some datasets
+    if args.db == 'cmnist':
+        data = data.reshape((-1, 1, 28, 28))
     elif args.db == 'ccoil100':
-        net = extract_convsdae_coil100(slope=reluslope)
-        data = data.reshape((-1,3,128,128))
+        data = data.reshape((-1, 3, 128, 128))
     elif args.db == 'cytf':
-        net = extract_convsdae_ytf(slope=reluslope)
-        data = data.reshape((-1,3,55,55))
+        data = data.reshape((-1, 3, 55, 55))
     elif args.db == 'cyale':
-        net = extract_convsdae_yale(slope=reluslope)
-        data = data.reshape((-1,1,168,192))
+        data = data.reshape((-1, 1, 168, 192))
 
     totalset = torch.utils.data.ConcatDataset([trainset, testset])
 
@@ -116,14 +116,9 @@ def main():
     batch_sampler = DCCSampler(trainset, shuffle=True, batch_size=args.batchsize)
 
     # copying model params from Pretrained (SDAE) weights file
-    filename = os.path.join(outputdir, args.torchmodel)
-    if os.path.isfile(filename):
-        print("==> loading params from checkpoint '{}'".format(filename))
-        checkpoint = torch.load(filename)
-        net.load_state_dict(checkpoint['state_dict'])
-    else:
-        print("==> no checkpoint found at '{}'".format(filename))
-        raise
+    if load_pretraining:
+        load_weights(args, outputdir, net)
+
 
     # creating objects for loss functions, U's are initialized to Z here
     # Criterion1 corresponds to reconstruction loss
@@ -169,18 +164,18 @@ def main():
             _delta2 = checkpoint['delta2']
         else:
             print("==> no checkpoint found at '{}'".format(filename))
-            raise
+            raise ValueError
 
     # This is the actual Algorithm
     flag = 0
     for epoch in range(startepoch, args.nepoch):
-        if args.tensorboard:
-            log_value('sigma1', _sigma1, epoch)
-            log_value('sigma2', _sigma2, epoch)
-            log_value('lambda', _lambda, epoch)
+        if logger:
+            logger.log_value('sigma1', _sigma1, epoch)
+            logger.log_value('sigma2', _sigma2, epoch)
+            logger.log_value('lambda', _lambda, epoch)
 
-        train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda)
-        Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag)
+        train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda, logger)
+        Z, U, change_in_assign, assignment = test(testloader, net, criterion2, epoch, use_cuda, _delta, pairs, numeval, flag, logger)
 
         if flag:
             # As long as the change in label assignment < threshold, DCC continues to run.
@@ -212,11 +207,21 @@ def main():
                          'delta2': _delta2,
                          }, index, filename=outputdir)
 
-    sio.savemat(os.path.join(outputdir, 'features'), {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs, 'cluster':assignment})
+    output = {'Z': Z, 'U': U, 'gtlabels': labels, 'w': pairs, 'cluster':assignment}
+    sio.savemat(os.path.join(outputdir, 'features'), output)
 
+def load_weights(args, outputdir, net):
+    filename = os.path.join(outputdir, args.torchmodel)
+    if os.path.isfile(filename):
+        print("==> loading params from checkpoint '{}'".format(filename))
+        checkpoint = torch.load(filename)
+        net.load_state_dict(checkpoint['state_dict'])
+    else:
+        print("==> no checkpoint found at '{}'".format(filename))
+        raise ValueError
 
 # Training
-def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda):
+def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, _sigma1, _sigma2, _lambda, logger):
     losses = AverageMeter()
     losses1 = AverageMeter()
     losses2 = AverageMeter()
@@ -249,22 +254,22 @@ def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, 
         loss = loss1 + loss2
 
         # record loss
-        losses1.update(loss1.data[0], inputs.size(0))
-        losses2.update(loss2.data[0], inputs.size(0))
-        losses.update(loss.data[0], inputs.size(0))
+        losses1.update(loss1.item(), inputs.size(0))
+        losses2.update(loss2.item(), inputs.size(0))
+        losses.update(loss.item(), inputs.size(0))
 
         loss.backward()
         optimizer.step()
 
     # log to TensorBoard
-    if args.tensorboard:
-        log_value('total_loss', losses.avg, epoch)
-        log_value('reconstruction_loss', losses1.avg, epoch)
-        log_value('dcc_loss', losses2.avg, epoch)
+    if logger:
+        logger.log_value('total_loss', losses.avg, epoch)
+        logger.log_value('reconstruction_loss', losses1.avg, epoch)
+        logger.log_value('dcc_loss', losses2.avg, epoch)
 
 
 # Testing
-def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag):
+def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, flag, logger):
     net.eval()
 
     original = []
@@ -287,23 +292,38 @@ def test(testloader, net, criterion, epoch, use_cuda, _delta, pairs, numeval, fl
 
     change_in_assign = 0
     assignment = -np.ones(len(labels))
+
+    if logger and epoch % 3 == 0:
+        logger.log_images('representatives', plot_to_image(U, 'representatives'), epoch)
+
     # logs clustering measures only if sigma2 has reached the minimum (delta2)
     if flag:
         index, ari, ami, nmi, acc, n_components, assignment = computeObj(U, pairs, _delta, labels, numeval)
 
         # log to TensorBoard
         change_in_assign = np.abs(oldassignment - index).sum()
-        if args.tensorboard:
-            log_value('ARI', ari, epoch)
-            log_value('AMI', ami, epoch)
-            log_value('NMI', nmi, epoch)
-            log_value('ACC', acc, epoch)
-            log_value('Numcomponents', n_components, epoch)
-            log_value('labeldiff', change_in_assign, epoch)
+        if logger:
+            logger.log_value('ARI', ari, epoch)
+            logger.log_value('AMI', ami, epoch)
+            logger.log_value('NMI', nmi, epoch)
+            logger.log_value('ACC', acc, epoch)
+            logger.log_value('Numcomponents', n_components, epoch)
+            logger.log_value('labeldiff', change_in_assign, epoch)
 
         oldassignment[...] = index
 
     return features, U, change_in_assign, assignment
+
+def plot_to_image(U, title):
+    plt.clf()
+    plt.scatter(U[:,0], U[:,1])
+    plt.title(title)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+    image = ToTensor()(image).unsqueeze(0)
+    return image
 
 # Saving checkpoint
 def save_checkpoint(state, index, filename):
@@ -311,4 +331,5 @@ def save_checkpoint(state, index, filename):
     torch.save(state, newfilename)
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args)
