@@ -59,8 +59,8 @@ def computeHyperParams(pairs, Z):
     numsamples = len(Z)
     epsilon = np.linalg.norm(Z[pairs[:, 0].astype(int)] - Z[pairs[:, 1].astype(int)], axis=1)
     epsilon = np.sort(epsilon)
-    # largest is noise just consider as noise
-    if epsilon[-1] < cfg.RCC.NOISE_THRESHOLD:
+    # if largest is noise then just consider as noise
+    if epsilon[-1] / np.sqrt(cfg.DIM) < cfg.RCC.NOISE_THRESHOLD:
         epsilon = np.asarray([cfg.RCC.NOISE_THRESHOLD])
     else:
         epsilon = epsilon[np.where(epsilon / np.sqrt(cfg.DIM) > cfg.RCC.NOISE_THRESHOLD)]
