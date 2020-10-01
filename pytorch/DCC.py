@@ -236,6 +236,9 @@ def train(trainloader, net, optimizer, criterion1, criterion2, epoch, use_cuda, 
         sampweights = torch.squeeze(sampweights)
         index = torch.squeeze(index)
         pairs = pairs.view(-1, 2)
+        
+        index = index.long()
+        pairs = pairs.long()
 
         if use_cuda:
             inputs = inputs.cuda()
