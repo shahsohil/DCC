@@ -94,15 +94,16 @@ def extract(dataloader, net, use_cuda):
     original = []
     features = []
     labels = []
-
-    for batch_idx, (inputs, targets) in enumerate(dataloader):
-        if use_cuda:
-            inputs = inputs.cuda()
-        inputs_Var = Variable(inputs, volatile=True)
-        enc, dec = net(inputs_Var)
-        features += list(enc.data.cpu().numpy())
-        labels += list(targets)
-        original += list(inputs.cpu().numpy())
+    
+    with torch.no_grad():
+        for batch_idx, (inputs, targets) in enumerate(dataloader):
+            if use_cuda:
+                inputs = inputs.cuda()
+            inputs_Var = Variable(inputs)
+            enc, dec = net(inputs_Var)
+            features += list(enc.data.cpu().numpy())
+            labels += list(targets)
+            original += list(inputs.cpu().numpy())
 
     original = np.asarray(original).astype(np.float32)
     if len(original.shape) != len(inputs.shape):
