@@ -12,6 +12,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import normalize
 from sklearn.decomposition import PCA
 
+from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.metrics.pairwise import distance_metrics
+
 
 def load_data(filename, n_samples):
     import cPickle
@@ -89,7 +92,14 @@ def kNN(X, k, measure='euclidean'):
     from scipy.spatial import distance
 
     weights = []
-    w = distance.cdist(X, X, measure)
+    
+    parallelized_metrics = list(sklearn.metrics.pairwise.distance_metrics().keys())
+       
+    if(measure in parallelized_metrics):
+        w = pairwise_distances(X=X, Y=X, metric=measure, n_jobs=-1)
+    else:
+        w = distance.cdist(X, X, measure)
+    
     y = np.argsort(w, axis=1)
 
     for i, x in enumerate(X):
@@ -133,8 +143,13 @@ def mkNN(X, k, measure='euclidean'):
     for x in np.arange(0, samples, batchsize):
         start = x
         end = min(x + batchsize, samples)
-
-        w = distance.cdist(X[start:end], X, measure)
+        
+        parallelized_metrics = list(sklearn.metrics.pairwise.distance_metrics().keys())
+        
+        if(measure in parallelized_metrics):
+            w = pairwise_distances(X=X[start:end], Y=X, metric=measure, n_jobs=-1)
+        else:
+            w = distance.cdist(X[start:end], X, measure)
 
         y = np.argpartition(w, b, axis=1)
 
